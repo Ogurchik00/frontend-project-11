@@ -1,34 +1,40 @@
-import * as path from 'path';
-// import { fileURLToPath } from 'url';
-// import { dirname } from 'path';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
-import { CleanWebpackPlugin } from 'clean-webpack-plugin';
-
-// const __filename = fileURLToPath(import.meta.url);
-// const __dirname = dirname(__filename);
 
 export default {
-  mode: 'development',
-  entry: {
-    main: './src/runApp.js',
-  },
+  mode: process.env.NODE_ENV || 'development',
   module: {
     rules: [
+      {
+        test: /\.js$/,
+        exclude: /node_modules/,
+        use: {
+          loader: 'babel-loader',
+          options: {
+            presets: ['@babel/preset-env'],
+          },
+        },
+      },
       { test: /\.css$/, use: ['style-loader', 'css-loader', 'postcss-loader'] },
       {
         test: /\.scss$/,
         use: ['style-loader', 'css-loader', 'sass-loader', 'postcss-loader'],
       },
+      {
+        test: /\.woff2?(\?v=[0-9]\.[0-9]\.[0-9])?$/,
+        use: 'url-loader?limit=10000',
+      },
+      {
+        test: /\.(ttf|eot|svg)(\?[\s\S]+)?$/,
+        use: 'file-loader',
+      },
     ],
-  },
-  output: {
-    filename: '[name].[contenthash].js',
-    path: path.resolve('dist'),
   },
   plugins: [
     new HtmlWebpackPlugin({
-      template: './index.html',
+      template: 'index.html',
     }),
-    new CleanWebpackPlugin(),
   ],
+  output: {
+    clean: true,
+  },
 };

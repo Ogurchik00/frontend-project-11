@@ -1,14 +1,16 @@
+develop:
+	npx webpack serve
+
 install:
 	npm ci
+
+build:
+	NODE_ENV=production npx webpack
+
+test:
+	npm test
+
 lint:
 	npx eslint .
-test:
-	NODE_OPTIONS=--experimental-vm-modules npx jest
-coverage-tests:
-	NODE_OPTIONS=--experimental-vm-modules npx jest --coverage
-test-watch:
-	NODE_OPTIONS=--experimental-vm-modules npx jest --watch
-link:
-	sudo npm link
-publish:
-	npm publish --dry-run
+
+.PHONY: test

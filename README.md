@@ -1,14 +1,24 @@
-**Hexlet tests and linter status:**
-[![Actions Status](https://github.com/k1ntsugi1/frontend-project-lvl3/workflows/hexlet-check/badge.svg)](https://github.com/k1ntsugi1/frontend-project-lvl3/actions)
+# RSS-reader
+#RSS-reader-hexlet / - JavaScript + Webpack - Third project for Hexlet.io 
+Проект "RSS"
 
-**Maintainability Badge:**
-[![Maintainability](https://api.codeclimate.com/v1/badges/376681579f70502eda39/maintainability)](https://codeclimate.com/github/k1ntsugi1/frontend-project-lvl3/maintainability)
+## Tech stack 
 
-[**Vercel**](https://frontend-project-lvl3-n7zy8hry3-k1ntsugi1.vercel.app)
+- Java Script
+- Axios
+- i18next
+- Webpack 
+- Yup Validate 
 
-**RSS** – специализированный формат, предназначенный для описания лент новостей, анонсов статей и других материалов. Это наиболее простой способ для сайтов (обычно, блогов) дать возможность пользователям подписываться на изменения.
+### Hexlet tests and linter status:
 
-**RSS агрегатор** – сервис для агрегации RSS-потоков, с помощью которого удобно читать разнообразные источники, например, блоги. Он позволяет добавлять неограниченное количество RSS-лент, сам их обновляет и добавляет новые записи в общий поток.
+[![Actions Status](https://github.com/imikh1991/frontend-project-11/workflows/hexlet-check/badge.svg)](https://github.com/imikh1991/frontend-project-11/actions)
+
+[![Maintainability](https://api.codeclimate.com/v1/badges/19fc3b94930cf16c1bec/maintainability)](https://codeclimate.com/github/imikh1991/frontend-project-11/maintainability)
+
+[![Test Coverage](https://api.codeclimate.com/v1/badges/19fc3b94930cf16c1bec/test_coverage)](https://codeclimate.com/github/imikh1991/frontend-project-11/test_coverage)
 
 
-![alt Image](https://raw.githubusercontent.com/k1ntsugi1/frontend-project-lvl3/main/images/face.jpg)
+
+Deploy: 
+https://frontend-project-11-git-main-imikh1991.vercel.app
