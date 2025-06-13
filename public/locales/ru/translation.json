@@ -18,11 +18,25 @@
       "close": "Закрыть",
       "fullPost": "Читать полностью"
     },
+    "success": {
+      "rssLoaded": "RSS успешно загружен"
+    },
+    "feed": {
+      "noTitle": "Без названия"
+    },
+    "post": {
+      "noTitle": "Без названия"
+    },
     "errors": {
       "required": "Не должно быть пустым",
       "invalidUrl": "Ссылка должна быть валидным URL",
       "notRss": "Ресурс не содержит валидный RSS",
       "duplicate": "RSS уже существует",
-      "network": "Ошибка сети"
+      "network": "Ошибка сети",
+      "timeout": "Таймаут запроса",
+      "invalidResponse": "Неверный ответ сервера",
+      "invalidRss": "Невалидный RSS",
+      "noChannel": "Канал не найден",
+      "parseError": "Ошибка парсинга"
     }
   }

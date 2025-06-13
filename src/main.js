@@ -12,7 +12,7 @@ const createApp = () => {
     feeds: [],
     posts: [],
     process: {
-      state: 'filling',
+      state: 'filling', // filling, sending, success, error
       error: null
     },
     ui: {
@@ -31,7 +31,7 @@ const createApp = () => {
 
   // Функция рендеринга списка фидов
   const renderFeeds = () => {
-    const container = document.getElementById('feeds-list');
+    const container = document.getElementById('feeds');
     if (!container) return;
 
     container.innerHTML = state.feeds.length > 0
@@ -53,7 +53,7 @@ const createApp = () => {
 
   // Функция рендеринга списка постов
   const renderPosts = () => {
-    const container = document.getElementById('posts-list');
+    const container = document.getElementById('posts');
     if (!container) return;
 
     container.innerHTML = state.posts.length > 0
@@ -126,7 +126,10 @@ const createApp = () => {
           })),
           ...state.posts
         ];
-        state.process = { state: 'success', error: null };
+        state.process = { 
+          state: 'success', 
+          error: null 
+        };
         urlInput.value = '';
       } catch (error) {
         state.process = { 
@@ -170,41 +173,37 @@ const createApp = () => {
               <div class="row">
                 <div class="col">
                   <div class="form-floating">
-                    <input type="text" 
-                           class="form-control ${process.error ? 'is-invalid' : ''}" 
-                           id="rss-url" 
-                           placeholder="${i18n.t('rssForm.placeholder')}" 
-                           required
-                           aria-label="url">
+                    <input 
+                      type="text" 
+                      id="rss-url" 
+                      class="form-control ${process.error ? 'is-invalid' : ''}" 
+                      placeholder="${i18n.t('rssForm.placeholder')}" 
+                      required
+                      aria-label="url"
+                    >
                     <label for="rss-url">${i18n.t('rssForm.label')}</label>
                     <div class="invalid-feedback">${process.error ? i18n.t(process.error) : ''}</div>
                   </div>
                 </div>
                 <div class="col-auto">
-                  <button type="submit" 
-                          class="btn btn-primary h-100" 
-                          ${process.state === 'sending' ? 'disabled' : ''}>
+                  <button type="submit" class="btn btn-primary h-100">
                     ${i18n.t('rssForm.submit')}
                   </button>
                 </div>
               </div>
             </form>
 
-            <div class="feedback">
-                ${process.state === 'success' ? `
-                    <div class="alert alert-success mt-3">
-                        RSS успешно загружен
+            <!-- Блок для отображения статуса -->
+            <div class="feedback mt-3">
+              ${process.state === 'success' ? `
+                <div class="alert alert-success">
+                  RSS успешно загружен
                 </div>
-            ` : ''}
-      ${process.error ? `
-        <div class="alert alert-danger mt-3">
-          ${i18n.t(process.error)}
-        </div>
-      ` : ''}
-    </div>
+              ` : ''}
+            </div>
 
-            <div id="feeds-list" class="mt-5"></div>
-            <div id="posts-list" class="mt-4"></div>
+            <div id="feeds" class="mt-5"></div>
+            <div id="posts" class="mt-4"></div>
           </div>
         </div>
       </div>
@@ -231,7 +230,7 @@ const createApp = () => {
     setupEventListeners();
   };
 
-  // Инициализация updater после объявления renderApp
+  // Инициализация updater
   const { startAutoUpdate } = createUpdater(
     () => state,
     renderApp,
