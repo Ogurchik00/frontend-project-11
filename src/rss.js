@@ -1,3 +1,4 @@
+// src/rss.js
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 import parse from './parser.js';
@@ -36,13 +37,19 @@ export const loadFeed = (url, state, i18n) => {
 
       state.feeds.unshift(feed);
       state.posts.unshift(...posts);
+
+      // Успешное состояние формы
+      state.form.valid = true;
+      state.form.error = null;
     })
     .catch((err) => {
-      if (err.isAxiosError) {
-        throw new Error(i18n.t('errors.network'));
-      }
+      state.form.valid = false;
 
-      throw new Error(err.message);
+      if (err.isAxiosError) {
+        state.form.error = i18n.t('errors.network');
+      } else {
+        state.form.error = err.message;
+      }
     });
 };
 

@@ -1,22 +1,22 @@
-export default (data) => {
+// src/parser.js
+export default (xmlString) => {
     const parser = new DOMParser();
-    const doc = parser.parseFromString(data, 'application/xml');
+    const doc = parser.parseFromString(xmlString, 'application/xml');
+    const parserError = doc.querySelector('parsererror');
+    if (parserError) return null;
   
-    const parseError = doc.querySelector('parsererror');
-    if (parseError) return null;
+    const feedTitle = doc.querySelector('channel > title')?.textContent;
+    const feedDescription = doc.querySelector('channel > description')?.textContent;
   
-    const channel = doc.querySelector('channel');
-    if (!channel) return null;
-  
-    const title = channel.querySelector('title')?.textContent ?? '';
-    const description = channel.querySelector('description')?.textContent ?? '';
-  
-    const items = Array.from(doc.querySelectorAll('item')).map((item) => ({
-      title: item.querySelector('title')?.textContent ?? '',
-      description: item.querySelector('description')?.textContent ?? '',
-      link: item.querySelector('link')?.textContent ?? '',
+    const items = [...doc.querySelectorAll('item')].map((itemEl) => ({
+      title: itemEl.querySelector('title')?.textContent,
+      description: itemEl.querySelector('description')?.textContent,
+      link: itemEl.querySelector('link')?.textContent,
     }));
   
-    return { title, description, items };
+    return {
+      title: feedTitle,
+      description: feedDescription,
+      items,
+    };
   };
-  
