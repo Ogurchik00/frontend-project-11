@@ -3,7 +3,6 @@ import i18next from 'i18next';
 import * as yup from 'yup';
 import initView from './view.js';
 import resources from './locales/index.js';
-import parse from './parser.js';
 import { loadFeed, updateFeeds } from './rss.js';
 
 const state = {
@@ -27,6 +26,7 @@ const app = () => {
     const elements = {
       form: document.querySelector('form'),
       input: document.querySelector('input[name="url"]'),
+      submit: document.querySelector('button[type="submit"]'),
       feedback: document.querySelector('.feedback'),
       feedsContainer: document.querySelector('.feeds'),
       postsContainer: document.querySelector('.posts'),
@@ -56,20 +56,16 @@ const app = () => {
       validateUrl(url, urls)
         .then((validUrl) => loadFeed(validUrl, watchedState, i18n))
         .then(() => {
-          watchedState.form.valid = true;
-          watchedState.form.error = null;
-          elements.feedback.classList.remove('text-danger');
-          elements.feedback.classList.add('text-success');
-          elements.feedback.textContent = i18n.t('success');
-          elements.form.reset();
-          elements.input.focus();
+          watchedState.form = {
+            valid: true,
+            error: null,
+          };
         })
         .catch((err) => {
-          watchedState.form.valid = false;
-          watchedState.form.error = err.message;
-          elements.feedback.classList.remove('text-success');
-          elements.feedback.classList.add('text-danger');
-          elements.feedback.textContent = err.message;
+          watchedState.form = {
+            valid: false,
+            error: err.message,
+          };
         });
     });
 
