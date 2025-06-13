@@ -1,5 +1,6 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap';
+import { validateUrl } from './validation.js';
 
 const app = document.getElementById('app');
 
@@ -23,7 +24,14 @@ app.innerHTML = `
 document.getElementById('rss-form').addEventListener('submit', (e) => {
   e.preventDefault();
   const url = document.getElementById('rss-url').value;
-  addFeed(url);
+
+  validateUrl(url).then(({ isValid, error }) => {
+    if (isValid) {
+      addFeed(url);
+    } else {
+      alert(`Ошибка: ${error}`); 
+    }
+  });
 });
 
 function addFeed(url) {
