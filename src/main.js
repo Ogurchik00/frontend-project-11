@@ -1,249 +1,71 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
-import 'bootstrap-icons/font/bootstrap-icons.css';
-import { Modal } from 'bootstrap';
-import i18n from './i18n';
-import createValidation from './validation';
-import createRssParser from './rssParser';
-import createUpdater from './updater';
+import i18next from 'i18next';
+import * as yup from 'yup';
+import initView from './view.js';
+import resources from './locales/index.js';
+import parse from './parser.js';
+import { loadFeed, updateFeeds } from './rss.js';
 
-const createApp = () => {
-  const state = {
-    feeds: [],
-    posts: [],
-    process: {
-      state: 'filling', // filling, sending, success, error
-      error: null
-    },
-    ui: {
-      lastUpdate: null,
-      updating: false,
-      updateInterval: 5000
-    }
-  };
-
-  let postIdCounter = 1;
-  const generatePostId = () => postIdCounter++;
-
-  const { fetchRssFeed, parseRss } = createRssParser();
-  const { validateUrl } = createValidation(() => state);
-
-  const renderFeeds = () => {
-    const container = document.getElementById('feeds');
-    if (!container) return;
-
-    container.innerHTML = state.feeds.length > 0
-      ? `<div class="card border-0">
-           <div class="card-body">
-             <h2 class="card-title h4">${i18n.t('feeds.title')}</h2>
-             <ul class="list-group border-0 rounded-0">
-               ${state.feeds.map(feed => `
-                 <li class="list-group-item border-0 border-end-0">
-                   <h3 class="h6 m-0">${feed.title}</h3>
-                   <p class="m-0 small text-muted">${feed.description}</p>
-                 </li>
-               `).join('')}
-             </ul>
-           </div>
-         </div>`
-      : `<div class="alert alert-info">${i18n.t('feeds.empty')}</div>`;
-  };
-
-  const renderPosts = () => {
-    const container = document.getElementById('posts');
-    if (!container) return;
-
-    container.innerHTML = state.posts.length > 0
-      ? `<div class="card border-0">
-           <div class="card-body">
-             <h2 class="card-title h4">${i18n.t('posts.title')}</h2>
-             <ul class="list-group border-0 rounded-0">
-               ${state.posts.map(post => `
-                 <li class="list-group-item border-0 border-end-0 ${post.read ? 'bg-light' : ''}">
-                   <div class="d-flex justify-content-between align-items-start">
-                     <a href="${post.link}" 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        class="${post.read ? 'fw-normal' : 'fw-bold'}">
-                       ${post.title}
-                     </a>
-                     <button type="button" 
-                             class="btn btn-sm btn-outline-primary" 
-                             data-post-id="${post.id}"
-                             data-bs-toggle="modal" 
-                             data-bs-target="#postModal">
-                       ${i18n.t('modal.preview')}
-                     </button>
-                   </div>
-                 </li>
-               `).join('')}
-             </ul>
-           </div>
-         </div>`
-      : `<div class="alert alert-info">${i18n.t('posts.empty')}</div>`;
-
-    document.querySelectorAll('[data-post-id]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const postId = e.currentTarget.getAttribute('data-post-id');
-        const post = state.posts.find(p => p.id === postId);
-        if (post) post.read = true;
-      });
-    });
-  };
-
-  const setupEventListeners = () => {
-    const form = document.getElementById('rss-form');
-    if (!form) return;
-
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-			console.log('Форма отправлена!')
-      const urlInput = document.getElementById('rss-url');
-      const url = urlInput.value.trim();
-      
-      state.process = { state: 'sending', error: null };
-      renderApp();
-
-      try {
-        const validation = await validateUrl(url);
-        if (!validation.isValid) throw new Error(validation.error);
-        if (state.feeds.some(feed => feed.url === url)) throw new Error('errors.duplicate');
-
-        const xmlString = await fetchRssFeed(url);
-        const { feed, posts } = await parseRss(xmlString);
-        
-        state.feeds = [{ ...feed, url }, ...state.feeds];
-        state.posts = [
-          ...posts.map(post => ({
-            ...post,
-            id: generatePostId(),
-            read: false,
-            pubDate: post.pubDate || new Date().toISOString()
-          })),
-          ...state.posts
-        ];
-        state.process = { 
-          state: 'success', 
-          error: null 
-        };
-        urlInput.value = '';
-      } catch (error) {
-        state.process = { 
-          state: 'error', 
-          error: error.message.includes('Network') ? 'errors.network' : error.message
-        };
-      } finally {
-        renderApp();
-      }
-    });
-
-    const modal = document.getElementById('postModal');
-    if (modal) {
-      modal.addEventListener('show.bs.modal', (e) => {
-        const button = e.relatedTarget;
-        const postId = button.getAttribute('data-post-id');
-        const post = state.posts.find(p => p.id === postId);
-        if (post) {
-          document.getElementById('postModalTitle').textContent = post.title;
-          document.getElementById('postModalBody').textContent = post.description;
-          document.getElementById('postModalLink').href = post.link;
-        }
-      });
-    }
-  };
-
-  const renderApp = () => {
-    const app = document.getElementById('app');
-    if (!app) return;
-
-    const { process } = state;
-
-    app.innerHTML = `
-      <div class="container-fluid">
-        <div class="row">
-          <div class="col-md-10 col-lg-8 mx-auto my-4">
-            <h1 class="display-4 mb-4 text-center">${i18n.t('rssForm.title')}</h1>
-            
-            <form id="rss-form">
-              <div class="row">
-                <div class="col">
-                  <div class="form-floating">
-                    <input 
-                      type="text" 
-                      id="rss-url" 
-                      class="form-control ${process.error ? 'is-invalid' : ''}" 
-                      placeholder="${i18n.t('rssForm.placeholder')}" 
-                      required
-                      aria-label="url"
-                    >
-                    <label for="rss-url">${i18n.t('rssForm.label')}</label>
-                    <div class="invalid-feedback">${process.error ? i18n.t(process.error) : ''}</div>
-                  </div>
-                </div>
-                <div class="col-auto">
-                  <button type="submit" class="btn btn-primary h-100">
-                    ${i18n.t('rssForm.submit')}
-                  </button>
-                </div>
-              </div>
-            </form>
-
-            <div class="feedback mt-3">
-              ${process.state === 'success' ? `
-                <div class="alert alert-success">
-                  ${i18n.t('success.rssLoaded')}
-                </div>
-              ` : ''}
-            </div>
-
-            <div id="feeds" class="mt-5"></div>
-            <div id="posts" class="mt-4"></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="modal fade" id="postModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title" id="postModalTitle"></h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="${i18n.t('modal.close')}"></button>
-            </div>
-            <div class="modal-body" id="postModalBody"></div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${i18n.t('modal.close')}</button>
-              <a href="#" class="btn btn-primary" id="postModalLink" target="_blank">${i18n.t('modal.fullPost')}</a>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-
-    renderFeeds();
-    renderPosts();
-    setupEventListeners();
-  };
-
-  const { startAutoUpdate } = createUpdater(
-    () => state,
-    renderApp,
-    renderPosts,
-    generatePostId
-  );
-
-  return { 
-		init: () => {
-			i18n.changeLanguage('ru').then(() => {
-				console.log('Тест перевода:', i18n.t('success.rssLoaded')); // 👈 добавь здесь
-				renderApp();
-				if (state.feeds.length > 0) {
-					startAutoUpdate();
-				}
-			});
-		}
-	}
+const state = {
+  feeds: [],
+  posts: [],
+  readPosts: new Set(),
+  form: {
+    valid: true,
+    error: null,
+  },
 };
 
-document.addEventListener('DOMContentLoaded', () => {
-  const app = createApp();
-  app.init();
-});
+const app = () => {
+  const i18n = i18next.createInstance();
+
+  i18n.init({
+    lng: 'ru',
+    debug: false,
+    resources,
+  }).then(() => {
+    const elements = {
+      form: document.querySelector('form'),
+      input: document.querySelector('input'),
+      feedback: document.querySelector('.feedback'),
+      feedsContainer: document.querySelector('.feeds'),
+      postsContainer: document.querySelector('.posts'),
+      modal: document.getElementById('modal'),
+      modalTitle: document.querySelector('.modal-title'),
+      modalBody: document.querySelector('.modal-body'),
+      modalLink: document.querySelector('.full-article'),
+    };
+
+    const watchedState = initView(state, elements, i18n);
+
+    elements.form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const url = elements.input.value.trim();
+      const urls = state.feeds.map((f) => f.url);
+
+      const schema = yup.string().url(i18n.t('errors.invalidUrl')).notOneOf(urls, i18n.t('errors.duplicate')).required();
+
+      schema.validate(url)
+        .then((validUrl) => loadFeed(validUrl, watchedState, i18n))
+        .catch((err) => {
+          watchedState.form.valid = false;
+          watchedState.form.error = err.message;
+        });
+    });
+
+    setInterval(() => updateFeeds(watchedState, i18n), 5000);
+
+    elements.postsContainer.addEventListener('click', (e) => {
+      if (e.target.dataset.id) {
+        const post = state.posts.find((p) => p.id === e.target.dataset.id);
+        state.readPosts.add(post.id);
+        watchedState.readPosts = new Set(state.readPosts);
+        elements.modalTitle.textContent = post.title;
+        elements.modalBody.textContent = post.description;
+        elements.modalLink.href = post.link;
+      }
+    });
+  });
+};
+
+app();
