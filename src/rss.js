@@ -1,41 +1,78 @@
-// src/rss.js
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 import parse from './parser.js';
 
-const proxyUrl = (url) => `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`;
+const makeProxyUrl = (url) => {
+  const proxyUrl = new URL('https://allorigins.hexlet.app/get');
+  proxyUrl.searchParams.set('disableCache', 'true');
+  proxyUrl.searchParams.set('url', url);
+  return proxyUrl.toString();
+};
 
 export const loadFeed = (url, state, i18n) => {
-  const { feeds, posts } = state;
-  return axios.get(proxyUrl(url))
-    .then((res) => {
-      const { feed, items } = parse(res.data.contents);
-      const newFeed = { ...feed, url };
-      state.feeds = [...feeds, newFeed];
-      const newPosts = items.map((item) => ({ ...item, id: uuidv4(), feedUrl: url }));
-      state.posts = [...newPosts, ...posts];
-      state.form = { valid: true, error: null };
+  const proxyUrl = makeProxyUrl(url);
+
+  return axios.get(proxyUrl)
+    .then((response) => {
+      const { contents } = response.data;
+      const parsed = parse(contents);
+
+      if (!parsed) {
+        throw new Error(i18n.t('errors.invalidRss'));
+      }
+
+      const feed = {
+        id: uuidv4(),
+        url,
+        title: parsed.title,
+        description: parsed.description,
+      };
+
+      const posts = parsed.items.map((item) => ({
+        ...item,
+        id: uuidv4(),
+        feedId: feed.id,
+      }));
+
+      state.feeds.unshift(feed);
+      state.posts.unshift(...posts);
     })
-    .catch(() => {
-      state.form = { valid: false, error: i18n.t('errors.network') };
+    .catch((err) => {
+      if (err.isAxiosError) {
+        throw new Error(i18n.t('errors.network'));
+      }
+
+      throw new Error(err.message);
     });
 };
 
 export const updateFeeds = (state, i18n) => {
-  const { feeds, posts } = state;
-  const requests = feeds.map((feed) =>
-    axios.get(proxyUrl(feed.url))
-      .then((res) => {
-        const { items } = parse(res.data.contents);
-        const existingLinks = posts.map((p) => p.link);
-        const newPosts = items
-          .filter((item) => !existingLinks.includes(item.link))
-          .map((item) => ({ ...item, id: uuidv4(), feedUrl: feed.url }));
+  const requests = state.feeds.map((feed) => {
+    const proxyUrl = makeProxyUrl(feed.url);
+
+    return axios.get(proxyUrl)
+      .then((response) => {
+        const { contents } = response.data;
+        const parsed = parse(contents);
+        if (!parsed) return;
+
+        const existingLinks = new Set(state.posts.map((post) => post.link));
+        const newPosts = parsed.items
+          .filter((item) => !existingLinks.has(item.link))
+          .map((item) => ({
+            ...item,
+            id: uuidv4(),
+            feedId: feed.id,
+          }));
+
         if (newPosts.length > 0) {
-          state.posts = [...newPosts, ...state.posts];
+          state.posts.unshift(...newPosts);
         }
       })
-      .catch(() => {})
-  );
+      .catch(() => {
+        // Ошибки обновления фидов игнорируются
+      });
+  });
+
   return Promise.all(requests);
 };
