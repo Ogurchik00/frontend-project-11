@@ -21,6 +21,14 @@
     "post": {
       "noTitle": "Статья без названия"
     },
+    "modal": {
+      "preview": "Просмотр",
+      "close": "Закрыть",
+      "fullPost": "Читать полностью"
+    },
+    "updating": "Обновление...",
+    "lastUpdate": "Последнее обновление",
+    "never": "еще не было",
     "errors": {
       "required": "URL обязателен",
       "invalidUrl": "Введите корректный URL",

@@ -1,6 +1,5 @@
 import { fetchRssFeed, parseRss } from './rssParser';
-import { state, renderApp, renderPosts } from './main';
-import i18n from './i18n';
+import { state, renderApp, renderPosts, generatePostId } from './main';
 
 let updateInterval = null;
 
@@ -15,13 +14,13 @@ const checkFeedUpdates = async (feed) => {
     const uniquePosts = newPosts.filter(post => !existingLinks.has(post.link));
     
     if (uniquePosts.length > 0) {
-      // Добавляем дату публикации для новых постов
-      const postsWithDate = uniquePosts.map(post => ({
+      // Добавляем метаданные для новых постов
+      return uniquePosts.map(post => ({
         ...post,
-        pubDate: new Date().toISOString()
+        id: generatePostId(),
+        read: false,
+        pubDate: post.pubDate || new Date().toISOString()
       }));
-      
-      return postsWithDate;
     }
     return [];
   } catch (error) {

@@ -1,5 +1,10 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  base: '/', 
+  base: '/',
+  esbuild: {
+    supported: {
+      'top-level-await': true
+    },
+  }
 });

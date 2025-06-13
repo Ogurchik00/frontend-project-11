@@ -1,8 +1,10 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
+import 'bootstrap-icons/font/bootstrap-icons.css';
+import { Modal } from 'bootstrap';
 import i18n from './i18n';
 import { validateUrl } from './validation';
 import { fetchRssFeed, parseRss } from './rssParser';
-import { startAutoUpdate, stopAutoUpdate, updateFeeds } from './updater';
+import { startAutoUpdate, stopAutoUpdate } from './updater';
 
 // Состояние приложения
 const state = {
@@ -18,6 +20,10 @@ const state = {
     updateInterval: 5000 // 5 секунд
   }
 };
+
+// Генератор ID для постов
+let postIdCounter = 1;
+const generatePostId = () => postIdCounter++;
 
 // Рендер всего приложения
 const renderApp = () => {
@@ -92,6 +98,23 @@ const renderApp = () => {
         </div>
       </div>
     </div>
+    
+    <!-- Модальное окно для предпросмотра -->
+    <div class="modal fade" id="postModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="postModalTitle"></h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body" id="postModalBody"></div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${i18n.t('modal.close')}</button>
+            <a href="#" class="btn btn-primary" id="postModalLink" target="_blank">${i18n.t('modal.fullPost')}</a>
+          </div>
+        </div>
+      </div>
+    </div>
   `;
 
   renderFeeds();
@@ -125,16 +148,56 @@ const renderPosts = () => {
   container.innerHTML = state.posts.length > 0
     ? `<ul class="list-group">${
       state.posts.map(post => `
-        <li class="list-group-item">
-          <a href="${post.link}" target="_blank" rel="noopener noreferrer" class="fw-bold">
-            ${post.title}
-          </a>
-          <p class="mb-1 small">${post.description}</p>
-          <span class="badge bg-primary">${new Date(post.pubDate).toLocaleString()}</span>
+        <li class="list-group-item ${post.read ? 'bg-light' : ''}">
+          <div class="d-flex justify-content-between align-items-start">
+            <a href="${post.link}" 
+               target="_blank" 
+               rel="noopener noreferrer" 
+               class="${post.read ? 'fw-normal' : 'fw-bold'}">
+              ${post.title}
+            </a>
+            <button class="btn btn-sm btn-outline-primary preview-btn" 
+                    data-post-id="${post.id}"
+                    title="${i18n.t('modal.preview')}">
+              <i class="bi bi-eye"></i>
+            </button>
+          </div>
+          <p class="mb-1 small text-truncate">${post.description}</p>
+          <span class="badge bg-secondary">${new Date(post.pubDate).toLocaleString()}</span>
         </li>
       `).join('')
     }</ul>`
     : `<div class="alert alert-info">${i18n.t('posts.empty')}</div>`;
+
+  // Добавляем обработчики для кнопок предпросмотра
+  document.querySelectorAll('.preview-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const postId = e.currentTarget.getAttribute('data-post-id');
+      showPostModal(postId);
+    });
+  });
+};
+
+// Показ модального окна с постом
+const showPostModal = (postId) => {
+  const post = state.posts.find(p => p.id === postId);
+  if (!post) return;
+
+  // Помечаем пост как прочитанный
+  post.read = true;
+  
+  // Обновляем список постов (чтобы снять жирное начертание)
+  renderPosts();
+
+  // Заполняем модальное окно
+  document.getElementById('postModalTitle').textContent = post.title;
+  document.getElementById('postModalBody').innerHTML = post.description;
+  document.getElementById('postModalLink').href = post.link;
+
+  // Показываем модальное окно
+  const modal = new Modal(document.getElementById('postModal'));
+  modal.show();
 };
 
 // Настройка обработчиков событий
@@ -164,12 +227,17 @@ const setupEventListeners = () => {
       const xmlString = await fetchRssFeed(url);
       const { feed, posts } = await parseRss(xmlString);
       
-      // Сохраняем URL в объекте feed
-      feed.url = url;
+      // Добавляем метаданные
+      const postsWithMeta = posts.map(post => ({
+        ...post,
+        id: generatePostId(),
+        read: false,
+        pubDate: post.pubDate || new Date().toISOString()
+      }));
 
       // Обновляем состояние
-      state.feeds = [feed, ...state.feeds];
-      state.posts = [...posts, ...state.posts];
+      state.feeds = [{ ...feed, url }, ...state.feeds];
+      state.posts = [...postsWithMeta, ...state.posts];
       state.process = { state: 'success', error: null };
       
       // Запускаем автообновление
@@ -204,7 +272,6 @@ const setupEventListeners = () => {
       stopAutoUpdate();
     } else {
       startAutoUpdate();
-      updateFeeds(); // Немедленная проверка при возвращении
     }
   });
 };
@@ -220,4 +287,4 @@ i18n.init().then(() => {
 });
 
 // Экспортируем состояние для использования в других модулях
-export { state, renderApp, renderPosts };
+export { state, renderApp, renderPosts, generatePostId };

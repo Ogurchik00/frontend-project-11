@@ -21,6 +21,14 @@
     "post": {
       "noTitle": "Untitled post"
     },
+    "modal": {
+      "preview": "Preview",
+      "close": "Close",
+      "fullPost": "Read full post"
+    },
+    "updating": "Updating...",
+    "lastUpdate": "Last update",
+    "never": "never",
     "errors": {
       "required": "URL is required",
       "invalidUrl": "Please enter a valid URL",
