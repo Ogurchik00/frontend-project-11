@@ -100,46 +100,39 @@ const createApp = () => {
     const form = document.getElementById('rss-form');
     if (!form) return;
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const urlInput = document.getElementById('rss-url');
-      const url = urlInput.value.trim();
-      
-      state.process = { state: 'sending', error: null };
-      renderApp();
-
-      try {
-        const validation = await validateUrl(url);
-        if (!validation.isValid) throw new Error(validation.error);
-        if (state.feeds.some(feed => feed.url === url)) throw new Error('errors.duplicate');
-
-        const xmlString = await fetchRssFeed(url);
-        const { feed, posts } = await parseRss(xmlString);
-        
-        state.feeds = [{ ...feed, url }, ...state.feeds];
-        state.posts = [
-          ...posts.map(post => ({
-            ...post,
-            id: generatePostId(),
-            read: false,
-            pubDate: post.pubDate || new Date().toISOString()
-          })),
-          ...state.posts
-        ];
-        state.process = { 
-          state: 'success', 
-          error: null 
-        };
-        urlInput.value = '';
-      } catch (error) {
-        state.process = { 
-          state: 'error', 
-          error: error.message.includes('Network') ? 'errors.network' : error.message
-        };
-      } finally {
-        renderApp();
-      }
-    });
+		form.addEventListener('submit', async (e) => {
+			e.preventDefault();
+			const urlInput = document.getElementById('rss-url');
+			const url = urlInput.value.trim();
+			
+			state.process = { state: 'sending', error: null };
+			renderApp();
+		
+			try {
+				const validation = await validateUrl(url);
+				if (!validation.isValid) throw new Error(validation.error);
+				if (state.feeds.some(feed => feed.url === url)) throw new Error('errors.duplicate');
+		
+				const xmlString = await fetchRssFeed(url);
+				const { feed, posts } = await parseRss(xmlString);
+				
+				state.feeds = [{ ...feed, url }, ...state.feeds];
+				state.posts = [...posts, ...state.posts];
+				state.process = { 
+					state: 'success', 
+					error: null,
+					successMessage: 'RSS успешно загружен' // Добавляем явное сообщение
+				};
+				urlInput.value = '';
+			} catch (error) {
+				state.process = { 
+					state: 'error', 
+					error: error.message.includes('Network') ? 'errors.network' : error.message
+				};
+			} finally {
+				renderApp();
+			}
+		});
 
     const modal = document.getElementById('postModal');
     if (modal) {
@@ -192,7 +185,18 @@ const createApp = () => {
                 </div>
               </div>
             </form>
-
+						<div class="feedback">
+									${process.state === 'success' && process.successMessage ? `
+										<div class="alert alert-success" data-testid="success-message">
+											${process.successMessage}
+										</div>
+									` : ''}
+									${process.error ? `
+										<div class="alert alert-danger">
+											${i18n.t(process.error)}
+										</div>
+									` : ''}
+						</div>
             <!-- Блок для отображения статуса -->
             <div class="feedback mt-3">
               ${process.state === 'success' ? `
