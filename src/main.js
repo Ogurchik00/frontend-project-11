@@ -41,23 +41,44 @@ const app = () => {
     elements.form.addEventListener('submit', (e) => {
       e.preventDefault();
       const url = elements.input.value.trim();
-      const urls = state.feeds.map((f) => f.url);
+      const urls = state.feeds.map((feed) => feed.url);
 
-      const schema = yup.string().url(i18n.t('errors.invalidUrl')).notOneOf(urls, i18n.t('errors.duplicate')).required();
+      const schema = yup.string()
+        .url(i18n.t('errors.invalidUrl'))
+        .notOneOf(urls, i18n.t('errors.duplicate'))
+        .required(i18n.t('errors.required'));
 
       schema.validate(url)
-        .then((validUrl) => loadFeed(validUrl, watchedState, i18n))
+        .then((validUrl) => {
+          loadFeed(validUrl, watchedState, i18n)
+            .then(() => {
+              watchedState.form.valid = true;
+              watchedState.form.error = null;
+              elements.feedback.classList.remove('text-danger');
+              elements.feedback.classList.add('text-success');
+              elements.feedback.textContent = i18n.t('success');
+            })
+            .catch((err) => {
+              watchedState.form.valid = false;
+              watchedState.form.error = err.message;
+              elements.feedback.classList.remove('text-success');
+              elements.feedback.classList.add('text-danger');
+              elements.feedback.textContent = err.message;
+            });
+        })
         .catch((err) => {
           watchedState.form.valid = false;
           watchedState.form.error = err.message;
+          elements.feedback.classList.remove('text-success');
+          elements.feedback.classList.add('text-danger');
+          elements.feedback.textContent = err.message;
         });
     });
 
-    setInterval(() => updateFeeds(watchedState, i18n), 5000);
-
     elements.postsContainer.addEventListener('click', (e) => {
-      if (e.target.dataset.id) {
-        const post = state.posts.find((p) => p.id === e.target.dataset.id);
+      const { id } = e.target.dataset;
+      if (id) {
+        const post = state.posts.find((p) => p.id === id);
         state.readPosts.add(post.id);
         watchedState.readPosts = new Set(state.readPosts);
         elements.modalTitle.textContent = post.title;
@@ -65,6 +86,9 @@ const app = () => {
         elements.modalLink.href = post.link;
       }
     });
+
+    // Автообновление фидов каждые 5 секунд
+    setInterval(() => updateFeeds(watchedState, i18n), 5000);
   });
 };
 
