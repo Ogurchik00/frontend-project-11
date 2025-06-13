@@ -98,7 +98,7 @@ export default (state, elements, i18n) => onChange(state, (path) => {
   if (path === 'posts' || path === 'readPosts') {
     renderPosts(state.posts, state.readPosts, elements.postsContainer, i18n);
   }
-  if (path === 'form') {
+  if (path.startsWith('form')) {
     renderForm(state.form, elements, i18n);
   }
 });
