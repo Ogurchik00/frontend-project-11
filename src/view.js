@@ -77,12 +77,14 @@ const renderPosts = (posts, readPosts, container, i18n) => {
 };
 
 const renderForm = (form, elements, i18n) => {
-  const { input, feedback } = elements;
+  const { form: formElement, input, feedback } = elements;
   if (form.valid) {
     input.classList.remove('is-invalid');
     feedback.classList.remove('text-danger');
     feedback.classList.add('text-success');
     feedback.textContent = i18n.t('success');
+    formElement.reset();
+    input.focus();
   } else {
     input.classList.add('is-invalid');
     feedback.classList.remove('text-success');
