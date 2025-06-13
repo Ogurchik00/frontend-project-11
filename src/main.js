@@ -103,6 +103,7 @@ const createApp = () => {
                     <input type="text" 
                            class="form-control ${process.error ? 'is-invalid' : ''}" 
                            id="rss-url" 
+                           aria-label="url"
                            placeholder="${i18n.t('rssForm.placeholder')}" 
                            required>
                     <label for="rss-url">${i18n.t('rssForm.label')}</label>
