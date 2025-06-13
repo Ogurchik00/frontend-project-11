@@ -190,6 +190,19 @@ const createApp = () => {
               </div>
             </form>
 
+            <div class="feedback">
+                ${process.state === 'success' ? `
+                    <div class="alert alert-success mt-3">
+                        RSS успешно загружен
+                </div>
+            ` : ''}
+      ${process.error ? `
+        <div class="alert alert-danger mt-3">
+          ${i18n.t(process.error)}
+        </div>
+      ` : ''}
+    </div>
+
             <div id="feeds-list" class="mt-5"></div>
             <div id="posts-list" class="mt-4"></div>
           </div>
