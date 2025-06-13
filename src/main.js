@@ -7,7 +7,6 @@ import createRssParser from './rssParser';
 import createUpdater from './updater';
 
 const createApp = () => {
-  // Состояние приложения
   const state = {
     feeds: [],
     posts: [],
@@ -25,11 +24,9 @@ const createApp = () => {
   let postIdCounter = 1;
   const generatePostId = () => postIdCounter++;
 
-  // Инициализация модулей
   const { fetchRssFeed, parseRss } = createRssParser();
   const { validateUrl } = createValidation(() => state);
 
-  // Функция рендеринга списка фидов
   const renderFeeds = () => {
     const container = document.getElementById('feeds');
     if (!container) return;
@@ -51,7 +48,6 @@ const createApp = () => {
       : `<div class="alert alert-info">${i18n.t('feeds.empty')}</div>`;
   };
 
-  // Функция рендеринга списка постов
   const renderPosts = () => {
     const container = document.getElementById('posts');
     if (!container) return;
@@ -85,7 +81,6 @@ const createApp = () => {
          </div>`
       : `<div class="alert alert-info">${i18n.t('posts.empty')}</div>`;
 
-    // Обработчики для кнопок предпросмотра
     document.querySelectorAll('[data-post-id]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const postId = e.currentTarget.getAttribute('data-post-id');
@@ -95,44 +90,51 @@ const createApp = () => {
     });
   };
 
-  // Настройка обработчиков событий
   const setupEventListeners = () => {
     const form = document.getElementById('rss-form');
     if (!form) return;
 
-		form.addEventListener('submit', async (e) => {
-			e.preventDefault();
-			const urlInput = document.getElementById('rss-url');
-			const url = urlInput.value.trim();
-			
-			state.process = { state: 'sending', error: null };
-			renderApp();
-		
-			try {
-				const validation = await validateUrl(url);
-				if (!validation.isValid) throw new Error(validation.error);
-				if (state.feeds.some(feed => feed.url === url)) throw new Error('errors.duplicate');
-		
-				const xmlString = await fetchRssFeed(url);
-				const { feed, posts } = await parseRss(xmlString);
-				
-				state.feeds = [{ ...feed, url }, ...state.feeds];
-				state.posts = [...posts, ...state.posts];
-				state.process = { 
-					state: 'success', 
-					error: null,
-					successMessage: 'RSS успешно загружен' // Добавляем явное сообщение
-				};
-				urlInput.value = '';
-			} catch (error) {
-				state.process = { 
-					state: 'error', 
-					error: error.message.includes('Network') ? 'errors.network' : error.message
-				};
-			} finally {
-				renderApp();
-			}
-		});
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+			console.log('Форма отправлена!')
+      const urlInput = document.getElementById('rss-url');
+      const url = urlInput.value.trim();
+      
+      state.process = { state: 'sending', error: null };
+      renderApp();
+
+      try {
+        const validation = await validateUrl(url);
+        if (!validation.isValid) throw new Error(validation.error);
+        if (state.feeds.some(feed => feed.url === url)) throw new Error('errors.duplicate');
+
+        const xmlString = await fetchRssFeed(url);
+        const { feed, posts } = await parseRss(xmlString);
+        
+        state.feeds = [{ ...feed, url }, ...state.feeds];
+        state.posts = [
+          ...posts.map(post => ({
+            ...post,
+            id: generatePostId(),
+            read: false,
+            pubDate: post.pubDate || new Date().toISOString()
+          })),
+          ...state.posts
+        ];
+        state.process = { 
+          state: 'success', 
+          error: null 
+        };
+        urlInput.value = '';
+      } catch (error) {
+        state.process = { 
+          state: 'error', 
+          error: error.message.includes('Network') ? 'errors.network' : error.message
+        };
+      } finally {
+        renderApp();
+      }
+    });
 
     const modal = document.getElementById('postModal');
     if (modal) {
@@ -149,7 +151,6 @@ const createApp = () => {
     }
   };
 
-  // Основная функция рендеринга
   const renderApp = () => {
     const app = document.getElementById('app');
     if (!app) return;
@@ -185,23 +186,11 @@ const createApp = () => {
                 </div>
               </div>
             </form>
-						<div class="feedback">
-									${process.state === 'success' && process.successMessage ? `
-										<div class="alert alert-success" data-testid="success-message">
-											${process.successMessage}
-										</div>
-									` : ''}
-									${process.error ? `
-										<div class="alert alert-danger">
-											${i18n.t(process.error)}
-										</div>
-									` : ''}
-						</div>
-            <!-- Блок для отображения статуса -->
+
             <div class="feedback mt-3">
               ${process.state === 'success' ? `
                 <div class="alert alert-success">
-                  RSS успешно загружен
+                  ${i18n.t('success.rssLoaded')}
                 </div>
               ` : ''}
             </div>
@@ -234,7 +223,6 @@ const createApp = () => {
     setupEventListeners();
   };
 
-  // Инициализация updater
   const { startAutoUpdate } = createUpdater(
     () => state,
     renderApp,
@@ -243,18 +231,18 @@ const createApp = () => {
   );
 
   return { 
-    init: () => {
-      i18n.changeLanguage('ru').then(() => {
-        renderApp();
-        if (state.feeds.length > 0) {
-          startAutoUpdate();
-        }
-      });
-    }
-  };
+		init: () => {
+			i18n.changeLanguage('ru').then(() => {
+				console.log('Тест перевода:', i18n.t('success.rssLoaded')); // 👈 добавь здесь
+				renderApp();
+				if (state.feeds.length > 0) {
+					startAutoUpdate();
+				}
+			});
+		}
+	}
 };
 
-// Запуск приложения после загрузки DOM
 document.addEventListener('DOMContentLoaded', () => {
   const app = createApp();
   app.init();

@@ -1,63 +1,68 @@
 import i18n from './i18n';
 
 const createRssParser = () => {
-  const fetchRssFeed = (url) => {
-    return new Promise((resolve, reject) => {
-      const proxyUrl = `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`;
-      
-      const timeout = setTimeout(() => {
-        reject(new Error(i18n.t('errors.timeout')));
-      }, 10000);
+  const fetchRssFeed = async (url) => {
+    console.log('Запрос к прокси:', url);
+    
+    try {
+      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+      console.log('Полный URL прокси:', proxyUrl);
 
-      fetch(proxyUrl)
-        .then(response => {
-          clearTimeout(timeout);
-          if (!response.ok) throw new Error(i18n.t('errors.network'));
-          return response.json();
-        })
-        .then(data => {
-          if (data.status?.http_code !== 200) {
-            throw new Error(i18n.t('errors.invalidResponse'));
-          }
-          resolve(data.contents);
-        })
-        .catch(err => {
-          clearTimeout(timeout);
-          reject(err);
-        });
-    });
+      const response = await fetch(proxyUrl);
+      console.log('Статус ответа:', response.status);
+
+      if (!response.ok) {
+        throw new Error(i18n.t('errors.network'));
+      }
+
+      const data = await response.json();
+      console.log('Данные от прокси:', data);
+
+      if (!data.contents) {
+        throw new Error(i18n.t('errors.invalidResponse'));
+      }
+
+      return data.contents;
+    } catch (err) {
+      console.error('Ошибка при получении RSS:', err);
+      throw err;
+    }
   };
 
   const parseRss = (xmlString) => {
-    return new Promise((resolve, reject) => {
-      try {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(xmlString, 'text/xml');
-        
-        const parseError = doc.querySelector('parsererror');
-        if (parseError) throw new Error(i18n.t('errors.invalidRss'));
+    console.log('Полученный XML:', xmlString.substring(0, 100) + '...'); // Логируем только начало
+    
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(xmlString, 'text/xml');
 
-        const channel = doc.querySelector('channel');
-        if (!channel) throw new Error(i18n.t('errors.noChannel'));
-
-        const feed = {
-          title: channel.querySelector('title')?.textContent || i18n.t('feed.noTitle'),
-          description: channel.querySelector('description')?.textContent || '',
-        };
-
-        const items = doc.querySelectorAll('item');
-        const posts = Array.from(items).map(item => ({
-          title: item.querySelector('title')?.textContent || i18n.t('post.noTitle'),
-          description: item.querySelector('description')?.textContent || '',
-          link: item.querySelector('link')?.textContent || '#',
-          pubDate: item.querySelector('pubDate')?.textContent || null
-        }));
-
-        resolve({ feed, posts });
-      } catch (err) {
-        reject(new Error(i18n.t('errors.parseError')));
+      const parseError = doc.querySelector('parsererror');
+      if (parseError) {
+        console.error('Ошибка парсера:', parseError.textContent);
+        throw new Error(i18n.t('errors.invalidRss'));
       }
-    });
+
+      const channel = doc.querySelector('channel');
+      if (!channel) throw new Error(i18n.t('errors.noChannel'));
+
+      const feed = {
+        title: channel.querySelector('title')?.textContent || i18n.t('feed.noTitle'),
+        description: channel.querySelector('description')?.textContent || '',
+      };
+
+      const items = doc.querySelectorAll('item');
+      const posts = Array.from(items).map(item => ({
+        title: item.querySelector('title')?.textContent || i18n.t('post.noTitle'),
+        description: item.querySelector('description')?.textContent || '',
+        link: item.querySelector('link')?.textContent || '#',
+        pubDate: item.querySelector('pubDate')?.textContent || null
+      }));
+
+      return { feed, posts };
+    } catch (err) {
+      console.error('Ошибка парсинга:', err);
+      throw new Error(i18n.t('errors.parseError'));
+    }
   };
 
   const checkForUpdates = (existingPosts, newPosts) => {
