@@ -1,0 +1,36 @@
+{
+    "rssForm": {
+      "title": "RSS Агрегатор",
+      "label": "Ссылка на RSS-ленту",
+      "placeholder": "Введите URL RSS (например, https://example.com/feed.xml)",
+      "submit": "Добавить",
+      "loading": "Загрузка...",
+      "success": "RSS-лента успешно добавлена!"
+    },
+    "feeds": {
+      "title": "Ленты",
+      "empty": "Пока нет добавленных лент"
+    },
+    "posts": {
+      "title": "Статьи",
+      "empty": "Пока нет статей"
+    },
+    "feed": {
+      "noTitle": "Лента без названия"
+    },
+    "post": {
+      "noTitle": "Статья без названия"
+    },
+    "errors": {
+      "required": "URL обязателен",
+      "invalidUrl": "Введите корректный URL",
+      "notRss": "URL должен вести на RSS-ленту (.rss, .xml или /feed)",
+      "duplicate": "Эта RSS-лента уже добавлена",
+      "network": "Ошибка сети. Попробуйте позже",
+      "timeout": "Таймаут запроса. Проверьте соединение",
+      "invalidResponse": "Некорректный ответ сервера",
+      "invalidRss": "URL не содержит валидную RSS-ленту",
+      "noChannel": "RSS-канал не найден",
+      "parseError": "Ошибка парсинга RSS"
+    }
+  }

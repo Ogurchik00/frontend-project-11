@@ -1,13 +1,19 @@
 import * as yup from 'yup';
+import i18n from './i18n';
 
-export const rssSchema = yup.object().shape({
+const rssSchema = yup.object().shape({
   url: yup
     .string()
-    .required('URL обязателен')
-    .url('Некорректный URL')
+    .required(i18n.t('errors.required'))
+    .url(i18n.t('errors.invalidUrl'))
     .matches(
-      /(rss|feed|xml)/i,
-      'URL должен содержать RSS (например, .../rss.xml)'
+      /\.(rss|xml|feed)(\?|$)/i,
+      i18n.t('errors.notRss')
+    )
+    .test(
+      'unique-feed',
+      i18n.t('errors.duplicate'),
+      (value) => !state.feeds.some(feed => feed.url === value)
     ),
 });
 

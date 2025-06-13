@@ -1,0 +1,36 @@
+{
+    "rssForm": {
+      "title": "RSS Aggregator",
+      "label": "RSS Feed URL",
+      "placeholder": "Enter RSS URL (e.g. https://example.com/feed.xml)",
+      "submit": "Add Feed",
+      "loading": "Loading...",
+      "success": "RSS feed added successfully!"
+    },
+    "feeds": {
+      "title": "Feeds",
+      "empty": "No feeds added yet"
+    },
+    "posts": {
+      "title": "Posts",
+      "empty": "No posts yet"
+    },
+    "feed": {
+      "noTitle": "Untitled feed"
+    },
+    "post": {
+      "noTitle": "Untitled post"
+    },
+    "errors": {
+      "required": "URL is required",
+      "invalidUrl": "Please enter a valid URL",
+      "notRss": "The URL must point to an RSS feed (.rss, .xml or /feed)",
+      "duplicate": "This RSS feed already exists",
+      "network": "Network error. Please try again later",
+      "timeout": "Request timeout. Check your connection",
+      "invalidResponse": "Invalid server response",
+      "invalidRss": "This URL doesn't contain valid RSS",
+      "noChannel": "No RSS channel found",
+      "parseError": "Error parsing RSS feed"
+    }
+  }
