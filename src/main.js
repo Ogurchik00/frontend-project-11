@@ -1,3 +1,4 @@
+// src/main.js
 import 'bootstrap/dist/css/bootstrap.min.css';
 import i18next from 'i18next';
 import * as yup from 'yup';
@@ -41,10 +42,9 @@ const app = () => {
     const validateUrl = (url, existingUrls) => {
       const schema = yup
         .string()
-        .url()
-        .notOneOf(existingUrls)
+        .url(i18n.t('errors.invalidUrl'))
+        .notOneOf(existingUrls, i18n.t('errors.duplicate'))
         .required();
-
       return schema.validate(url);
     };
 
@@ -56,39 +56,27 @@ const app = () => {
       validateUrl(url, urls)
         .then((validUrl) => loadFeed(validUrl, watchedState, i18n))
         .then(() => {
-          watchedState.form = {
-            valid: true,
-            error: null,
-          };
+          watchedState.form.valid = true;
+          watchedState.form.error = null;
         })
         .catch((err) => {
           let errorKey = 'errors.invalidUrl';
-
-          if (err.message.includes('must be a valid URL')) {
-            errorKey = 'errors.invalidUrl';
-          } else if (err.message.includes('must not be one of the following values')) {
+          if (err.message === i18n.t('errors.duplicate')) {
             errorKey = 'errors.duplicate';
           }
-
-          watchedState.form = {
-            valid: false,
-            error: i18n.t(errorKey),
-          };
+          watchedState.form.valid = false;
+          watchedState.form.error = i18n.t(errorKey);
         });
     });
 
     setInterval(() => updateFeeds(watchedState, i18n), 5000);
 
     elements.postsContainer.addEventListener('click', (e) => {
-      const { target } = e;
-      const postId = target.dataset.id;
+      const postId = e.target.dataset.id;
       if (postId) {
         const post = state.posts.find((p) => p.id === postId);
-        if (!post) return;
-
         state.readPosts.add(post.id);
         watchedState.readPosts = new Set(state.readPosts);
-
         elements.modalTitle.textContent = post.title;
         elements.modalBody.textContent = post.description;
         elements.modalLink.href = post.link;
