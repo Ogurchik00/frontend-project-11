@@ -26,7 +26,7 @@ const app = () => {
   }).then(() => {
     const elements = {
       form: document.querySelector('form'),
-      input: document.querySelector('input'),
+      input: document.querySelector('input[name="url"]'),
       feedback: document.querySelector('.feedback'),
       feedsContainer: document.querySelector('.feeds'),
       postsContainer: document.querySelector('.posts'),
@@ -38,33 +38,31 @@ const app = () => {
 
     const watchedState = initView(state, elements, i18n);
 
+    const validateUrl = (url, existingUrls) => {
+      const schema = yup
+        .string()
+        .url(i18n.t('errors.invalidUrl'))
+        .notOneOf(existingUrls, i18n.t('errors.duplicate'))
+        .required();
+
+      return schema.validate(url);
+    };
+
     elements.form.addEventListener('submit', (e) => {
       e.preventDefault();
       const url = elements.input.value.trim();
       const urls = state.feeds.map((feed) => feed.url);
 
-      const schema = yup.string()
-        .url(i18n.t('errors.invalidUrl'))
-        .notOneOf(urls, i18n.t('errors.duplicate'))
-        .required(i18n.t('errors.required'));
-
-      schema.validate(url)
-        .then((validUrl) => {
-          loadFeed(validUrl, watchedState, i18n)
-            .then(() => {
-              watchedState.form.valid = true;
-              watchedState.form.error = null;
-              elements.feedback.classList.remove('text-danger');
-              elements.feedback.classList.add('text-success');
-              elements.feedback.textContent = i18n.t('success');
-            })
-            .catch((err) => {
-              watchedState.form.valid = false;
-              watchedState.form.error = err.message;
-              elements.feedback.classList.remove('text-success');
-              elements.feedback.classList.add('text-danger');
-              elements.feedback.textContent = err.message;
-            });
+      validateUrl(url, urls)
+        .then((validUrl) => loadFeed(validUrl, watchedState, i18n))
+        .then(() => {
+          watchedState.form.valid = true;
+          watchedState.form.error = null;
+          elements.feedback.classList.remove('text-danger');
+          elements.feedback.classList.add('text-success');
+          elements.feedback.textContent = i18n.t('success');
+          elements.form.reset();
+          elements.input.focus();
         })
         .catch((err) => {
           watchedState.form.valid = false;
@@ -75,20 +73,23 @@ const app = () => {
         });
     });
 
+    setInterval(() => updateFeeds(watchedState, i18n), 5000);
+
     elements.postsContainer.addEventListener('click', (e) => {
-      const { id } = e.target.dataset;
-      if (id) {
-        const post = state.posts.find((p) => p.id === id);
+      const { target } = e;
+      const postId = target.dataset.id;
+      if (postId) {
+        const post = state.posts.find((p) => p.id === postId);
+        if (!post) return;
+
         state.readPosts.add(post.id);
         watchedState.readPosts = new Set(state.readPosts);
+
         elements.modalTitle.textContent = post.title;
         elements.modalBody.textContent = post.description;
         elements.modalLink.href = post.link;
       }
     });
-
-    // Автообновление фидов каждые 5 секунд
-    setInterval(() => updateFeeds(watchedState, i18n), 5000);
   });
 };
 
