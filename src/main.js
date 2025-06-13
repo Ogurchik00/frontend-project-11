@@ -2,19 +2,27 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import i18n from './i18n';
 import { validateUrl } from './validation';
 import { fetchRssFeed, parseRss } from './rssParser';
+import { startAutoUpdate, stopAutoUpdate, updateFeeds } from './updater';
 
+// Состояние приложения
 const state = {
   feeds: [],
   posts: [],
   process: {
     state: 'filling', // filling, sending, success, error
     error: null
+  },
+  ui: {
+    lastUpdate: null,
+    updating: false,
+    updateInterval: 5000 // 5 секунд
   }
 };
 
+// Рендер всего приложения
 const renderApp = () => {
   const app = document.getElementById('app');
-  const { process } = state;
+  const { process, ui } = state;
 
   app.innerHTML = `
     <div class="row justify-content-center">
@@ -58,6 +66,12 @@ const renderApp = () => {
           </div>
         </form>
         
+        <div class="text-end small text-muted mb-2">
+          ${ui.updating 
+            ? `<span class="spinner-border spinner-border-sm" role="status"></span> ${i18n.t('updating')}`
+            : `${i18n.t('lastUpdate')}: ${ui.lastUpdate || i18n.t('never')}`}
+        </div>
+        
         <div class="row">
           <div class="col-md-6">
             <div class="card mb-4">
@@ -85,6 +99,7 @@ const renderApp = () => {
   setupEventListeners();
 };
 
+// Рендер списка RSS-лент
 const renderFeeds = () => {
   const container = document.getElementById('feeds-list');
   if (!container) return;
@@ -95,12 +110,14 @@ const renderFeeds = () => {
         <li class="list-group-item">
           <h3 class="h6">${feed.title}</h3>
           <p class="mb-1 small text-muted">${feed.description}</p>
+          <span class="badge bg-secondary">${feed.url}</span>
         </li>
       `).join('')
     }</ul>`
     : `<div class="alert alert-info">${i18n.t('feeds.empty')}</div>`;
 };
 
+// Рендер списка постов
 const renderPosts = () => {
   const container = document.getElementById('posts-list');
   if (!container) return;
@@ -109,50 +126,70 @@ const renderPosts = () => {
     ? `<ul class="list-group">${
       state.posts.map(post => `
         <li class="list-group-item">
-          <a href="${post.link}" target="_blank" rel="noopener noreferrer">
+          <a href="${post.link}" target="_blank" rel="noopener noreferrer" class="fw-bold">
             ${post.title}
           </a>
           <p class="mb-1 small">${post.description}</p>
+          <span class="badge bg-primary">${new Date(post.pubDate).toLocaleString()}</span>
         </li>
       `).join('')
     }</ul>`
     : `<div class="alert alert-info">${i18n.t('posts.empty')}</div>`;
 };
 
+// Настройка обработчиков событий
 const setupEventListeners = () => {
-  document.getElementById('rss-form')?.addEventListener('submit', (e) => {
+  // Обработчик формы
+  document.getElementById('rss-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const url = document.getElementById('rss-url').value.trim();
+    const urlInput = document.getElementById('rss-url');
+    const url = urlInput.value.trim();
     
     state.process = { state: 'sending', error: null };
     renderApp();
 
-    validateUrl(url)
-      .then(({ isValid, error }) => {
-        if (!isValid) {
-          throw new Error(error);
-        }
-        return fetchRssFeed(url);
-      })
-      .then(parseRss)
-      .then(({ feed, posts }) => {
-        state.feeds = [...state.feeds, feed];
-        state.posts = [...posts, ...state.posts];
-        state.process = { state: 'success', error: null };
-      })
-      .catch((err) => {
-        state.process = { 
-          state: 'error', 
-          error: err.message.includes('Network Error') 
-            ? 'errors.network' 
-            : 'errors.invalidRss'
-        };
-      })
-      .finally(() => {
-        renderApp();
-      });
+    try {
+      // Валидация URL
+      const validation = await validateUrl(url);
+      if (!validation.isValid) {
+        throw new Error(validation.error);
+      }
+
+      // Проверка на дубликат
+      if (state.feeds.some(feed => feed.url === url)) {
+        throw new Error('errors.duplicate');
+      }
+
+      // Загрузка и парсинг RSS
+      const xmlString = await fetchRssFeed(url);
+      const { feed, posts } = await parseRss(xmlString);
+      
+      // Сохраняем URL в объекте feed
+      feed.url = url;
+
+      // Обновляем состояние
+      state.feeds = [feed, ...state.feeds];
+      state.posts = [...posts, ...state.posts];
+      state.process = { state: 'success', error: null };
+      
+      // Запускаем автообновление
+      startAutoUpdate();
+      
+      // Сбрасываем поле ввода
+      urlInput.value = '';
+    } catch (error) {
+      state.process = { 
+        state: 'error', 
+        error: error.message.includes('Network Error') 
+          ? 'errors.network' 
+          : error.message
+      };
+    } finally {
+      renderApp();
+    }
   });
 
+  // Переключение языков
   document.getElementById('lang-en')?.addEventListener('click', () => {
     i18n.changeLanguage('en').then(renderApp);
   });
@@ -160,7 +197,27 @@ const setupEventListeners = () => {
   document.getElementById('lang-ru')?.addEventListener('click', () => {
     i18n.changeLanguage('ru').then(renderApp);
   });
+
+  // Управление автообновлением при скрытии вкладки
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      stopAutoUpdate();
+    } else {
+      startAutoUpdate();
+      updateFeeds(); // Немедленная проверка при возвращении
+    }
+  });
 };
 
 // Инициализация приложения
-i18n.init().then(renderApp);
+i18n.init().then(() => {
+  renderApp();
+  
+  // Запускаем автообновление, если уже есть ленты
+  if (state.feeds.length > 0) {
+    startAutoUpdate();
+  }
+});
+
+// Экспортируем состояние для использования в других модулях
+export { state, renderApp, renderPosts };

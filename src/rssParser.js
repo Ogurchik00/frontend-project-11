@@ -62,3 +62,8 @@ export const fetchRssFeed = (url) => {
       }
     });
   };
+
+  export const checkForUpdates = (existingPosts, newPosts) => {
+    const existingLinks = new Set(existingPosts.map(post => post.link));
+    return newPosts.filter(post => !existingLinks.has(post.link));
+  };
