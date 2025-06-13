@@ -19,6 +19,8 @@ export const loadFeed = (url, state, i18n) => {
       const parsed = parse(contents);
 
       if (!parsed) {
+        state.form.valid = false;
+        state.form.error = i18n.t('errors.invalidRss');
         throw new Error(i18n.t('errors.invalidRss'));
       }
 
@@ -37,19 +39,16 @@ export const loadFeed = (url, state, i18n) => {
 
       state.feeds.unshift(feed);
       state.posts.unshift(...posts);
-
-      // Успешное состояние формы
-      state.form.valid = true;
-      state.form.error = null;
     })
     .catch((err) => {
       state.form.valid = false;
-
       if (err.isAxiosError) {
         state.form.error = i18n.t('errors.network');
-      } else {
-        state.form.error = err.message;
+        throw new Error(i18n.t('errors.network'));
       }
+      // parsing error or other
+      state.form.error = err.message;
+      throw err;
     });
 };
 
@@ -77,7 +76,7 @@ export const updateFeeds = (state, i18n) => {
         }
       })
       .catch(() => {
-        // Ошибки обновления фидов игнорируются
+        // Игнорируем ошибки при обновлении
       });
   });
 
