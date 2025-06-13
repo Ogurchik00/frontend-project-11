@@ -1,44 +1,28 @@
 {
     "rssForm": {
       "title": "RSS Агрегатор",
-      "label": "Ссылка на RSS-ленту",
-      "placeholder": "Введите URL RSS (например, https://example.com/feed.xml)",
-      "submit": "Добавить",
-      "loading": "Загрузка...",
-      "success": "RSS-лента успешно добавлена!"
+      "label": "Ссылка RSS",
+      "placeholder": "ссылка RSS",
+      "submit": "Добавить"
     },
     "feeds": {
-      "title": "Ленты",
-      "empty": "Пока нет добавленных лент"
+      "title": "Фиды",
+      "empty": "Пока нет фидов"
     },
     "posts": {
-      "title": "Статьи",
-      "empty": "Пока нет статей"
-    },
-    "feed": {
-      "noTitle": "Лента без названия"
-    },
-    "post": {
-      "noTitle": "Статья без названия"
+      "title": "Посты",
+      "empty": "Пока нет постов"
     },
     "modal": {
       "preview": "Просмотр",
       "close": "Закрыть",
       "fullPost": "Читать полностью"
     },
-    "updating": "Обновление...",
-    "lastUpdate": "Последнее обновление",
-    "never": "еще не было",
     "errors": {
-      "required": "URL обязателен",
-      "invalidUrl": "Введите корректный URL",
-      "notRss": "URL должен вести на RSS-ленту (.rss, .xml или /feed)",
-      "duplicate": "Эта RSS-лента уже добавлена",
-      "network": "Ошибка сети. Попробуйте позже",
-      "timeout": "Таймаут запроса. Проверьте соединение",
-      "invalidResponse": "Некорректный ответ сервера",
-      "invalidRss": "URL не содержит валидную RSS-ленту",
-      "noChannel": "RSS-канал не найден",
-      "parseError": "Ошибка парсинга RSS"
+      "required": "Не должно быть пустым",
+      "invalidUrl": "Ссылка должна быть валидным URL",
+      "notRss": "Ресурс не содержит валидный RSS",
+      "duplicate": "RSS уже существует",
+      "network": "Ошибка сети"
     }
   }
