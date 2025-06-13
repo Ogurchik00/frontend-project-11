@@ -41,8 +41,8 @@ const app = () => {
     const validateUrl = (url, existingUrls) => {
       const schema = yup
         .string()
-        .url(i18n.t('errors.invalidUrl'))
-        .notOneOf(existingUrls, i18n.t('errors.duplicate'))
+        .url()
+        .notOneOf(existingUrls)
         .required();
 
       return schema.validate(url);
@@ -62,9 +62,17 @@ const app = () => {
           };
         })
         .catch((err) => {
+          let errorKey = 'errors.invalidUrl';
+
+          if (err.message.includes('must be a valid URL')) {
+            errorKey = 'errors.invalidUrl';
+          } else if (err.message.includes('must not be one of the following values')) {
+            errorKey = 'errors.duplicate';
+          }
+
           watchedState.form = {
             valid: false,
-            error: err.message,
+            error: i18n.t(errorKey),
           };
         });
     });
